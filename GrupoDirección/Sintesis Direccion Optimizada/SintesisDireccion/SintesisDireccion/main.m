@@ -171,7 +171,7 @@ x0_opt = [c_res(6), c_res(8), 125];
 % L_BC máx 230 mm (Para que el aluminio de 3mm no pandee)
 % L_bieleta1 máx 150 mm (Para minimizar la fuerza del servo)
 lb = [190, deg2rad(15), 80];
-ub = [230, deg2rad(26), 150];
+ub = [230, deg2rad(32), 150];
 
 options = optimoptions('fmincon', 'Display', 'iter', 'Algorithm', 'sqp', 'MaxIterations', 200);
 
