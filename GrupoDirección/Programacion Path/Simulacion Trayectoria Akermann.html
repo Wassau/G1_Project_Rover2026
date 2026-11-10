@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Simulador Ackermann – Equipo PATH</title>
+    <style>
+        body { font-family: 'Segoe UI', sans-serif; background: #1e1e1e; color: #fff; text-align: center; margin: 0; padding: 16px; }
+        h1 { color: #FF9800; font-size: 22px; }
+        .container { display: flex; gap: 24px; justify-content: center; flex-wrap: wrap; }
+        canvas { background: #2c3e50; border-radius: 10px; max-width: 100%; }
+        .panel { background: #333; padding: 16px; border-radius: 10px; width: 300px; text-align: left; }
+        label { display: block; margin: 12px 0 4px; color: #3498db; font-weight: bold; }
+        input { width: 100%; box-sizing: border-box; }
+        .data-box { background: #444; padding: 10px; border-radius: 6px; font: 13px/1.6 monospace; margin-top: 14px; }
+        b { color: #2ecc71; }
+    </style>
+</head>
+<body>
+
+    <h1>Simulador cinemático Ackermann (δ máx. ±40°)</h1>
+    <p>Convención: δ &gt; 0 = giro a la izquierda · v &gt; 0 = avance · velocidades en las ruedas traseras (ML, MR)</p>
+
+    <div class="container">
+        <!-- LIENZO DE DIBUJO -->
+        <canvas id="cv" width="600" height="480"></canvas>
+        
+        <!-- PANEL DE CONTROL -->
+        <div class="panel">
+            <label>Ángulo de dirección δ: <span id="dv"></span>°</label>
+            <input type="range" id="d" min="-40" max="40" value="20">
+            
+            <label>Velocidad lineal v: <span id="vv"></span> mm/s</label>
+            <input type="range" id="v" min="-500" max="500" value="100" step="10">
+            
+            <!-- PARÁMETROS ACTUALIZADOS -->
+            <label>Distancia entre ejes L (mm)</label>
+            <input type="number" id="L" value="330">
+            
+            <label>Ancho de vía W (mm)</label>
+            <input type="number" id="W" value="240">
+            
+            <!-- DATOS CALCULADOS -->
+            <div class="data-box" id="output"></div>
+        </div>
+    </div>
+
+    <script>
+        const $ = id => document.getElementById(id);
+        const canvas = $('cv');
+        const ctx = canvas.getContext('2d');
+        const MAX_DEG = 40;
+        const PI = Math.PI;
+        const toDeg = rad => rad * 180 / PI;
+
+        // Función para dibujar una rueda con ángulo
+        function drawWheel(x, y, angle, color) {
+            ctx.save();
+            ctx.translate(x, y);
+            ctx.rotate(-angle);
+            ctx.fillStyle = color;
+            ctx.fillRect(-5, -17, 10, 34);
+            ctx.restore();
+        }
+
+        function updateSimulation() {
+            // 1. Leer valores de la interfaz
+            const steerDeg = +$('d').value;
+            const speed = +$('v').value;
+            const L_mm = +$('L').value;
+            const W_mm = +$('W').value;
+
+            // 2. Calcular cinemática (Modelo Bicicleta)
+            const steerRad = Math.max(-MAX_DEG, Math.min(MAX_DEG, steerDeg)) * PI / 180;
+            const tanDelta = Math.tan(steerRad);
+            const omega = speed * tanDelta / L_mm; // Velocidad angular
+            
+            const vLeft = speed - omega * W_mm / 2;  // Velocidad rueda interior
+            const vRight = speed + omega * W_mm / 2; // Velocidad rueda exterior
+            
+            const R = Math.abs(tanDelta) < 1e-9 ? Infinity : L_mm / tanDelta;
+            
+            // Ángulo real de Ackermann para cada rueda delantera
+            const angleLeft = isFinite(R) ? Math.atan(L_mm / (R - W_mm / 2)) : 0;
+            const angleRight = isFinite(R) ? Math.atan(L_mm / (R + W_mm / 2)) : 0;
+
+            // 3. Actualizar textos de la interfaz
+            $('dv').textContent = steerDeg;
+            $('vv').textContent = speed;
+            $('output').innerHTML = 
+                `R = <b>${isFinite(R) ? R.toFixed(0) : '∞'}</b> mm<br>` +
+                `ω = <b>${omega.toFixed(3)}</b> rad/s<br>` +
+                `v_izq (ML) = <b>${vLeft.toFixed(1)}</b> mm/s<br>` +
+                `v_der (MR) = <b>${vRight.toFixed(1)}</b> mm/s<br>` +
+                `δ rueda izq = <b>${toDeg(angleLeft).toFixed(1)}</b>°<br>` +
+                `δ rueda der = <b>${toDeg(angleRight).toFixed(1)}</b>°`;
+
+            // 4. DIBUJAR EN EL CANVAS
+            // Ajustamos la escala visual para que quepa bien con L=330 y W=240
+            const scale = 0.5; 
+            const visL = L_mm * scale;
+            const visW = W_mm * scale;
+            const cx = 300; // Centro X
+            const cy = 410; // Centro Y (eje trasero)
+
+            ctx.clearRect(0, 0, 600, 480);
+            ctx.font = '13px Arial';
+
+            // Dibujar Trayectoria y Centro de Giro (ICR)
+            if (isFinite(R)) {
+                const ix = cx - R * scale; // Centro instantáneo de rotación
+                
+                // Arco de trayectoria
+                ctx.setLineDash([6, 5]);
+                ctx.strokeStyle = '#e74c3c';
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                ctx.arc(ix, cy, Math.abs(R * scale), 0, 2 * PI);
+                ctx.stroke();
+                ctx.setLineDash([]);
+
+                // Líneas de radio
+                ctx.strokeStyle = 'rgba(255,255,255,.3)';
+                ctx.lineWidth = 1;
+                ctx.beginPath();
+                for (const side of [-1, 1]) {
+                    ctx.moveTo(ix, cy);
+                    ctx.lineTo(cx + side * visW / 2, cy);
+                    ctx.moveTo(ix, cy);
+                    ctx.lineTo(cx + side * visW / 2, cy - visL);
+                }
+                ctx.stroke();
+
+                // Punto ICR
+                ctx.fillStyle = '#ff0';
+                ctx.beginPath();
+                ctx.arc(ix, cy, 5, 0, 2 * PI);
+                ctx.fill();
+                ctx.fillStyle = '#fff';
+                ctx.fillText('ICR', ix + 8, cy - 8);
+            }
+
+            // Dibujar Chasis
+            ctx.fillStyle = 'rgba(46,204,113,.2)';
+            ctx.strokeStyle = '#2ecc71';
+            ctx.lineWidth = 3;
+            ctx.fillRect(cx - visW / 2, cy - visL, visW, visL);
+            ctx.strokeRect(cx - visW / 2, cy - visL, visW, visL);
+
+            // Dibujar Ruedas Delanteras (Dirección)
+            drawWheel(cx - visW / 2, cy - visL, angleLeft, '#3498db');
+            drawWheel(cx + visW / 2, cy - visL, angleRight, '#3498db');
+
+            // Dibujar Ruedas Traseras (Tracción)
+            drawWheel(cx - visW / 2, cy, 0, vLeft >= 0 ? '#e67e22' : '#c0392b');
+            drawWheel(cx + visW / 2, cy, 0, vRight >= 0 ? '#e67e22' : '#c0392b');
+
+            // Etiquetas
+            ctx.fillStyle = '#fff';
+            ctx.fillText('ML ' + vLeft.toFixed(0), cx - visW / 2 - 80, cy + 4);
+            ctx.fillText('MR ' + vRight.toFixed(0), cx + visW / 2 + 18, cy + 4);
+            ctx.fillText('S-Dir', cx - 14, cy - visL - 24);
+        }
+
+        // Escuchar cambios en los inputs
+        document.querySelectorAll('input').forEach(el => el.addEventListener('input', updateSimulation));
+        
+        // Ejecutar al cargar la página
+        updateSimulation();
+    </script>
+</body>
+</html>

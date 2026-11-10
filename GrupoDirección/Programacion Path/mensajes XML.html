@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Protocolo XML Global - Rover 2026</title>
+    <style>
+        :root {
+            --bg: #1a1a2e;
+            --card-bg: #16213e;
+            --text: #e2e2e2;
+            --core: #a29bfe;
+            --path: #55efc4;
+            --pwm: #fdcb6e;
+            --user: #74b9ff;
+            --code-bg: #0f0f1a;
+            --code-text: #00ffcc;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            margin: 0;
+            padding: 30px;
+        }
+
+        h1 {
+            text-align: center;
+            color: #fff;
+            margin-bottom: 10px;
+            font-size: 28px;
+        }
+
+        .subtitle {
+            text-align: center;
+            color: #a0a0a0;
+            margin-bottom: 40px;
+            font-size: 16px;
+        }
+
+        .grid-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+            gap: 25px;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .card {
+            background-color: var(--card-bg);
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 8px 20px rgba(0,0,0,0.4);
+            border-top: 5px solid;
+            transition: transform 0.2s;
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+        }
+
+        /* Colores por equipo emisor */
+        .card.user { border-color: var(--user); }
+        .card.core { border-color: var(--core); }
+        .card.path { border-color: var(--path); }
+        .card.pwm { border-color: var(--pwm); }
+
+        .card h2 {
+            margin-top: 0;
+            font-size: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .badge {
+            font-size: 12px;
+            padding: 4px 8px;
+            border-radius: 20px;
+            background: rgba(255,255,255,0.1);
+            font-weight: normal;
+        }
+
+        .flow {
+            display: flex;
+            align-items: center;
+            font-size: 14px;
+            color: #b0b0b0;
+            margin-bottom: 15px;
+            background: rgba(0,0,0,0.2);
+            padding: 8px;
+            border-radius: 6px;
+        }
+
+        .flow span.arrow {
+            margin: 0 10px;
+            color: #fff;
+            font-weight: bold;
+        }
+
+        .flow span.tag {
+            color: var(--code-text);
+            font-family: monospace;
+            font-weight: bold;
+        }
+
+        pre {
+            background-color: var(--code-bg);
+            padding: 15px;
+            border-radius: 8px;
+            overflow-x: auto;
+            font-family: 'Consolas', 'Courier New', monospace;
+            font-size: 14px;
+            color: var(--code-text);
+            border-left: 3px solid #333;
+        }
+
+        .desc {
+            font-size: 14px;
+            line-height: 1.5;
+            color: #ccc;
+            margin-bottom: 15px;
+        }
+
+        /* Resaltado de sintaxis básico */
+        .xml-tag { color: #ff79c6; }
+        .xml-attr { color: #8be9fd; }
+        .xml-val { color: #f1fa8c; }
+    </style>
+</head>
+<body>
+
+    <h1>📡 Protocolo de Comunicación XML (Global)</h1>
+    <div class="subtitle">Definición oficial de mensajes para la integración del Rover (DSMI 2026)</div>
+
+    <div class="grid-container">
+
+        <!-- 1. INIT -->
+        <div class="card user">
+            <h2>1. Conexión (Init) <span class="badge">USER -> CORE</span></h2>
+            <div class="flow">
+                <span class="tag">USER-PC / PAD / VISU</span>
+                <span class="arrow">➔</span>
+                <span class="tag">CORE (CommTcpIpServer)</span>
+            </div>
+            <div class="desc">Primer mensaje que envía cualquier cliente al conectarse al WiFi. CORE usa esto para guardar quién es y saber a quién enviarle los datos.</div>
+            <pre>&lt;<span class="xml-tag">Init</span>&gt;
+    &lt;<span class="xml-tag">Client</span>&gt;USER-PC&lt;/<span class="xml-tag">Client</span>&gt;
+&lt;/<span class="xml-tag">Init</span>&gt;</pre>
+        </div>
+
+        <!-- 2. MOVECAR -->
+        <div class="card user">
+            <h2>2. Orden de Movimiento <span class="badge">USER -> CORE -> PATH</span></h2>
+            <div class="flow">
+                <span class="tag">USER-PAD / PC</span>
+                <span class="arrow">➔</span>
+                <span class="tag">CORE</span>
+                <span class="arrow">➔</span>
+                <span class="tag">PATH (MovimCarro)</span>
+            </div>
+            <div class="desc">Orden de movimiento. <b>VelY</b> controla la velocidad de avance (adelante/atrás). <b>VelX</b> controla el ángulo de dirección (izquierda/derecha).</div>
+            <pre>&lt;<span class="xml-tag">MoveCar</span>&gt;
+    &lt;<span class="xml-tag">VelX</span>&gt;0.5&lt;/<span class="xml-tag">VelX</span>&gt;  <span style="color:#6272a4;">&lt;!-- -1.0 a 1.0 --&gt;</span>
+    &lt;<span class="xml-tag">VelY</span>&gt;0.8&lt;/<span class="xml-tag">VelY</span>&gt;  <span style="color:#6272a4;">&lt;!-- -1.0 a 1.0 --&gt;</span>
+&lt;/<span class="xml-tag">MoveCar</span>&gt;</pre>
+        </div>
+
+        <!-- 3. SET TIMER -->
+        <div class="card user">
+            <h2>3. Cambio de Timer <span class="badge">USER-PC -> CORE -> PATH</span></h2>
+            <div class="flow">
+                <span class="tag">USER-PC</span>
+                <span class="arrow">➔</span>
+                <span class="tag">CORE</span>
+                <span class="arrow">➔</span>
+                <span class="tag">PATH (OnSetTimerInterval)</span>
+            </div>
+            <div class="desc">Permite al usuario cambiar la frecuencia de refresco de la odometría. Por defecto será de 100 ms.</div>
+            <pre>&lt;<span class="xml-tag">SetTimer</span>&gt;
+    &lt;<span class="xml-tag">t_ms</span>&gt;50&lt;/<span class="xml-tag">t_ms</span>&gt;
+&lt;/<span class="xml-tag">SetTimer</span>&gt;</pre>
+        </div>
+
+        <!-- 4. MOVE PANTILT -->
+        <div class="card user">
+            <h2>4. Movimiento Cámara <span class="badge">USER -> CORE -> PWM</span></h2>
+            <div class="flow">
+                <span class="tag">USER-PAD / PC</span>
+                <span class="arrow">➔</span>
+                <span class="tag">CORE</span>
+                <span class="arrow">➔</span>
+                <span class="tag">PWM (MovimPanTilt)</span>
+            </div>
+            <div class="desc">Controla los servomotores de la cámara (Pan: giro horizontal, Tilt: inclinación vertical).</div>
+            <pre>&lt;<span class="xml-tag">MovePanTilt</span>&gt;
+    &lt;<span class="xml-tag">PanAngle_deg</span>&gt;90.0&lt;/<span class="xml-tag">PanAngle_deg</span>&gt;
+    &lt;<span class="xml-tag">TiltAngle_deg</span>&gt;-30.0&lt;/<span class="xml-tag">TiltAngle_deg</span>&gt;
+&lt;/<span class="xml-tag">MovePanTilt</span>&gt;</pre>
+        </div>
+
+        <!-- 5. POSITION / STATUS -->
+        <div class="card path">
+            <h2>5. Estado del Rover <span class="badge">PATH -> CORE -> USER/VISU</span></h2>
+            <div class="flow">
+                <span class="tag">PATH (MovimCarro)</span>
+                <span class="arrow">➔</span>
+                <span class="tag">CORE</span>
+                <span class="arrow">➔</span>
+                <span class="tag">USER / VISU</span>
+            </div>
+            <div class="desc">Enviado cada <code>Tm_ms</code>. Informa a la interfaz gráfica y al M5-Stack sobre la posición real del rover y la orientación (Theta).</div>
+            <pre>&lt;<span class="xml-tag">Status</span>&gt;
+    &lt;<span class="xml-tag">Position</span>&gt;
+        &lt;<span class="xml-tag">X_mm</span>&gt;120.5&lt;/<span class="xml-tag">X_mm</span>&gt;
+        &lt;<span class="xml-tag">Y_mm</span>&gt;-450.2&lt;/<span class="xml-tag">Y_mm</span>&gt;
+        &lt;<span class="xml-tag">Theta_deg</span>&gt;45.0&lt;/<span class="xml-tag">Theta_deg</span>&gt;
+    &lt;/<span class="xml-tag">Position</span>&gt;
+&lt;/<span class="xml-tag">Status</span>&gt;</pre>
+        </div>
+
+        <!-- 6. CONFIG -->
+        <div class="card core">
+            <h2>6. Configuración Inicial <span class="badge">CORE -> PATH / PWM</span></h2>
+            <div class="flow">
+                <span class="tag">CORE</span>
+                <span class="arrow">➔</span>
+                <span class="tag">PATH / PWM</span>
+            </div>
+            <div class="desc">Enviado al arrancar el sistema. CORE lee el <code>config.xml</code> y le pasa a cada subsistema los puertos serie y parámetros físicos.</div>
+            <pre>&lt;<span class="xml-tag">Config</span>&gt;
+    &lt;<span class="xml-tag">Path</span>&gt;
+        &lt;<span class="xml-tag">PortLeft</span>&gt;/dev/ttyUSB0&lt;/<span class="xml-tag">PortLeft</span>&gt;
+        &lt;<span class="xml-tag">Wheelbase_mm</span>&gt;330.0&lt;/<span class="xml-tag">Wheelbase_mm</span>&gt;
+        &lt;<span class="xml-tag">TrackWidth_mm</span>&gt;240.0&lt;/<span class="xml-tag">TrackWidth_mm</span>&gt;
+    &lt;/<span class="xml-tag">Path</span>&gt;
+&lt;/<span class="xml-tag">Config</span>&gt;</pre>
+        </div>
+
+        <!-- 7. EMERGENCY STOP -->
+        <div class="card user">
+            <h2>7. Parada de Emergencia <span class="badge">USER -> TODOS</span></h2>
+            <div class="flow">
+                <span class="tag">USER-PAD / PC</span>
+                <span class="arrow">➔</span>
+                <span class="tag">CORE</span>
+                <span class="arrow">➔</span>
+                <span class="tag">PATH / PWM</span>
+            </div>
+            <div class="desc">Detiene inmediatamente todos los motores del rover y los servos de la cámara.</div>
+            <pre>&lt;<span class="xml-tag">EmergencyStop</span>&gt;
+    &lt;<span class="xml-tag">Active</span>&gt;true&lt;/<span class="xml-tag">Active</span>&gt;
+&lt;/<span class="xml-tag">EmergencyStop</span>&gt;</pre>
+        </div>
+
+    </div>
+
+</body>
+</html>
