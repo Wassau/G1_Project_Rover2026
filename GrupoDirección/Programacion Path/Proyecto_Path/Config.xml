@@ -1,0 +1,15 @@
+<Config>
+    <Comm>
+        <PortRS485>/dev/ttyUSB0</PortRS485>
+        <BaudRate>9600</BaudRate>
+    </Comm>
+    <Path>
+        <Wheelbase_mm>330.0</Wheelbase_mm>
+        <TrackWidth_mm>240.0</TrackWidth_mm>
+        <WheelRadius_mm>56.0</WheelRadius_mm>
+        <GearRatio>20.0</GearRatio>
+        <MaxSteering_deg>40.0</MaxSteering_deg>
+        <EncoderCPR>1024</EncoderCPR>
+        <Tm_ms>100</Tm_ms>
+    </Path>
+</Config>

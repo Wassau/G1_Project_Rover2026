@@ -17,29 +17,39 @@ void Trajectory::InitializeTrajectory(float L, float W, float r, float i, float 
 
 void Trajectory::CalculateMotorSpeedsAndSteering(QVector2D dir)
 {
-    // EXTRAER Y ESCALAR LOS DATOS DEL VECTOR (Joystick)
-    // Asumimos que el joystick va de -1.0 a 1.0
-    // Eje Y -> Velocidad (Adelante/Atrás)
-    // Eje X -> Dirección (Izquierda/Derecha)
-    float target_speed_mm_s = dir.y() * max_speed_mm_s;
-    float target_steering_deg = - dir.x() * max_steering_deg;
 
+    // dir = (Vx, Vy) en mm/s
+    //   Vy = componente hacia delante (+ avance, - marcha atrás)
+    //   Vx = componente lateral (+ derecha)
+    float Vx = dir.x();
+    float Vy = dir.y();
+    // Velocidad lineal del carro = módulo del vector, con el signo de Vy
+    float target_speed_mm_s = std::sqrt(Vx * Vx + Vy * Vy);
+    if (Vy < 0) target_speed_mm_s = -target_speed_mm_s;           // marcha atrás
+    // Un carro no se mueve de lado: si no hay componente hacia delante, no avanza
+    if (std::abs(Vy) < 0.001) target_speed_mm_s = 0.0;
+    // Límite de velocidad
+    if (target_speed_mm_s >  max_speed_mm_s) target_speed_mm_s =  max_speed_mm_s;
+    if (target_speed_mm_s < -max_speed_mm_s) target_speed_mm_s = -max_speed_mm_s;
+
+    // Ángulo del vector respecto al eje de avance: 0 = recto, + = hacia la derecha
+    float angle_rad = std::atan2(Vx, std::abs(Vy));
+    // Convención: ángulo positivo = izquierda, negativo = derecha
+    float target_steering_deg = -angle_rad * 180.0f / M_PI;
     // LIMITAR EL ÁNGULO AL MÁXIMO FÍSICO DEL SERVO
     if (target_steering_deg > max_steering_deg) target_steering_deg = max_steering_deg;
     if (target_steering_deg < -max_steering_deg) target_steering_deg = -max_steering_deg;
 
     req_steering_deg = target_steering_deg;
 
-    // CALCULAR EL ÁNGULO REAL DE LA RUEDA DERECHA
     // Convertimos el ángulo de la rueda izquierda a radianes
     float dL_rad = req_steering_deg * M_PI / 180.0;
 
-    // Llamamos a la función que traduce tu mecanismo de 4 barras
-    float dR_rad = CalculateDeltaR(dL_rad);
+    // calcular el angulo real de la rueda derecha
+    float dR_rad = CalculateDeltaR(std::abs(dL_rad));
 
-    // CALCULAR LAS VELOCIDADES DE LOS MOTORES (Ackermann diferencial)
-    // Si el ángulo es prácticamente cero, vamos rectos
-    if (std::abs(dL_rad) < 0.001 && std::abs(dR_rad) < 0.001) {
+    // Calculo Akermann
+    if (std::abs(dL_rad) < 0.001) {
         req_speed_L_mm_s = target_speed_mm_s;
         req_speed_R_mm_s = target_speed_mm_s;
     }
@@ -68,7 +78,7 @@ float Trajectory::CalculateDeltaR(float dL_rad)
     float xA = 0.0;
     float yA = 0.0;
     float xD = W_ancho;
-    float yD = 0.0f;
+    float yD = 0.0;
     float LAB = Larm;
     float LBC = L_BC_opt;
     float LDC = Larm;
