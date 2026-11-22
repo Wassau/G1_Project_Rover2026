@@ -1,0 +1,7 @@
+
+State Machine - |Prueba_comunicacion|Rx_RS232_v2:inst9|proximoRx
+Name proximoRx.recibiendo_stop proximoRx.recibiendo_bit proximoRx.validando_start proximoRx.idle 
+proximoRx.idle 0 0 0 0 
+proximoRx.validando_start 0 0 1 1 
+proximoRx.recibiendo_bit 0 1 0 1 
+proximoRx.recibiendo_stop 1 0 0 1 
