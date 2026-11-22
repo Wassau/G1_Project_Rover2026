@@ -27,13 +27,13 @@ private:
     const float L_BC_opt = 216.0; // Bieleta larga
     const float gamma_opt_deg = 23.17; // Ángulo optimizado
     // Estado actual (Odometría)
-    float current_x;
-    float current_y;
-    float current_theta; // En radianes
+    float current_x= 0.0;
+    float current_y= 0.0;
+    float current_theta= 0.0; // En radianes
     // Salidas de control (Cinemática inversa)
-    float req_speed_L_mm_s;
-    float req_speed_R_mm_s;
-    float req_steering_deg;
+    float req_speed_L_mm_s= 0.0;
+    float req_speed_R_mm_s= 0.0;
+    float req_steering_deg= 0.0;
 
 public:
     explicit Trajectory(QObject *parent = nullptr);
