@@ -1,0 +1,9 @@
+<?xml version="1.0" ?>
+<LOG_ROOT>
+	<PROJECT NAME="FPGA_ComunicacionRS-232_v1">
+		<CBX_INST_ENTRY INSTANCE_NAME="|Prueba_comunicacion|Grados_a_duty:inst3|lpm_divide:Div0" CBX_FILE_NAME="lpm_divide_1jm.tdf"/>
+		<CBX_INST_ENTRY INSTANCE_NAME="|Prueba_comunicacion|PLL_100K:inst5|altpll:altpll_component" CBX_FILE_NAME="PLL_100K_altpll.v"/>
+		<CBX_INST_ENTRY INSTANCE_NAME="|Prueba_comunicacion|PWM_final:inst7|lpm_divide:Div0" CBX_FILE_NAME="lpm_divide_6jm.tdf"/>
+		<CBX_INST_ENTRY INSTANCE_NAME="|Prueba_comunicacion|PWM_final:inst7|lpm_mult:Mult0|multcore:mult_core|mpar_add:padder|lpm_add_sub:adder[0]" CBX_FILE_NAME="add_sub_lgh.tdf"/>
+	</PROJECT>
+</LOG_ROOT>

@@ -1,0 +1,80 @@
+library ieee;
+use ieee.std_logic_1164.all;
+use ieee.numeric_std.all;
+-------------------------------------------------------------------------------------------------------------------
+entity Texto_a_Numero is
+  generic(BITS          : positive := 8;     -- bits de numero_o (hasta 24)
+          VALOR_MAX     : natural  := 255;   -- limite del numero (con 8 bits, 255 como mucho)
+          VALOR_INICIAL : natural  := 90);   -- valor tras el reset (90 = servo al centro)
+  port   (clk_i         : in  std_logic;
+          rst_i         : in  std_logic;                          -- reset activo a '1'
+          dato_i        : in  std_logic_vector(7 downto 0);       -- conectar a caracter_o del Rx
+          dato_listo_i  : in  std_logic;                          -- conectar a dato_listo_o del Rx
+          numero_o      : out std_logic_vector(BITS-1 downto 0));  -- ultimo numero completo recibido
+end entity Texto_a_Numero;
+-------------------------------------------------------------------------------------------------------------------
+architecture Arq of Texto_a_Numero is
+
+  constant LF    : natural := 10;   -- fin de linea '\n'
+  constant CR    : natural := 13;   -- retorno de carro '\r'
+  constant CERO  : natural := 48;   -- codigo ASCII de '0'
+  constant NUEVE : natural := 57;   -- codigo ASCII de '9'
+
+  signal acumulado  : natural range 0 to VALOR_MAX := 0;              -- numero que se esta escribiendo
+  signal hay_cifras : std_logic := '0';                               -- ha llegado al menos una cifra
+  signal descartar  : std_logic := '0';                               -- ha llegado un caracter no valido
+  signal numero     : natural range 0 to VALOR_MAX := VALOR_INICIAL;  -- ultimo numero completo
+
+begin
+
+  assert VALOR_MAX < 2**BITS
+    report "VALOR_MAX no cabe en BITS bits" severity failure;
+  assert VALOR_INICIAL <= VALOR_MAX
+    report "VALOR_INICIAL debe ser menor o igual que VALOR_MAX" severity failure;
+
+  conv:
+  process (clk_i)
+    variable c         : natural range 0 to 255;              -- caracter recibido (codigo ASCII)
+    variable siguiente : natural range 0 to VALOR_MAX*10 + 9;  -- acumulado*10 + cifra
+  begin
+    if rising_edge(clk_i) then
+
+      if rst_i = '1' then
+        acumulado  <= 0;
+        hay_cifras <= '0';
+        descartar  <= '0';
+        numero     <= VALOR_INICIAL;
+
+      elsif dato_listo_i = '1' then                    -- ha llegado un caracter
+        c := to_integer(unsigned(dato_i));
+
+        if c >= CERO and c <= NUEVE then               -- CIFRA: numero*10 + cifra
+          siguiente := acumulado * 10 + (c - CERO);
+          if siguiente > VALOR_MAX then
+            acumulado <= VALOR_MAX;                    -- limitar
+          else
+            acumulado <= siguiente;
+          end if;
+          hay_cifras <= '1';
+
+        elsif c = LF or c = CR then                    -- FIN DE LINEA
+          if hay_cifras = '1' and descartar = '0' then
+            numero <= acumulado;                       -- sacar el numero
+          end if;
+          acumulado  <= 0;                             --vaciar
+          hay_cifras <= '0';
+          descartar  <= '0';
+
+        else                                          
+          descartar <= '1';
+        end if;
+      end if;
+    end if;
+
+	 
+  end process conv;
+  
+
+  numero_o <= std_logic_vector(to_unsigned(numero, BITS));
+end architecture Arq;
+-------------------------------------------------------------------------------------------------------------------

@@ -1,23 +1,46 @@
 #include <QCoreApplication>
-#include <QTimer>
 #include <QDebug>
-#include "movimcarro.h"
+#include <QThread>
+#include "motorcontroller.h"
+#include "motornanotec.h"
 
 int main(int argc, char *argv[])
 {
-    QCoreApplication a(argc, argv);
+    QCoreApplication app(argc, argv);
+    QString nombre = (argc > 1) ? QString(argv[1]) : QString("COM5");
 
-    // Set up code that uses the Qt event loop here.
-    // Call QCoreApplication::quit() or QCoreApplication::exit() to quit the application.
-    // A not very useful example would be including
-    // #include <QTimer>
-    // near the top of the file and calling
-    // QTimer::singleShot(5000, &a, &QCoreApplication::quit);
-    // which quits the application after 5 seconds.
+    MotorController controller;
+    if (!controller.Init(nombre, 9600))
+        return 1;
 
+    MotorNanotec motor;
+    motor.Initialize(56.0f, 20.0f, 1, &controller);       // módulo 1
 
-    // If you do not need a running Qt event loop, remove the call
-    // to QCoreApplication::exec() or use the Non-Qt Plain C++ Application template.
+    qInfo() << "--- 1. Comunicacion con el motor parado ---";
+    motor.RequestSpeedUpdate();
+    qInfo() << "respuesta:" << motor.GetLastReply().toHex(' ') << "| online:" << motor.IsOnline();
+    if (!motor.IsOnline()) {
+        qInfo() << "El modulo no contesta bien. No sigo.";
+        return 1;
+    }
 
-    return QCoreApplication::exec();
+    qInfo() << "--- 2. Girando a 20 mm/s durante 3 s ---";
+    motor.SetSpeed(20.0f);
+    qInfo() << "enviado:" << motor.GetLastMessage().toHex(' ')
+            << "| respuesta:" << motor.GetLastReply().toHex(' ');
+    for (int i = 0; i < 15; i++) {
+        QThread::msleep(200);
+        motor.RequestSpeedUpdate();
+        qInfo() << "velocidad:" << motor.GetCurrentSpeed() << "mm/s | online:" << motor.IsOnline();
+    }
+
+    qInfo() << "--- 3. Parada ---";
+    motor.Stop();
+    qInfo() << "respuesta al Stop:" << motor.GetLastReply().toHex(' ');
+    for (int i = 0; i < 5; i++) {
+        QThread::msleep(200);
+        motor.RequestSpeedUpdate();
+        qInfo() << "velocidad:" << motor.GetCurrentSpeed() << "mm/s";
+    }
+    return 0;
 }

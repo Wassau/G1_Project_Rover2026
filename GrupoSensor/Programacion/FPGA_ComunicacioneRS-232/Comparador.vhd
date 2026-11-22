@@ -1,0 +1,20 @@
+-- COMPARADOR DE CARACTERES
+
+library ieee;
+use ieee.std_logic_1164.all;
+use ieee.numeric_std.all;
+-------------------------------------------------------------------------------------------------------------------
+entity Comparador is
+  generic(BITS      : positive := 8;
+          CARACTER  : integer  := 65);                         -- 65 = 'A'
+  port   (caracter_i : in  std_logic_vector(BITS-1 downto 0);  -- conectar a caracter_o del Rx
+          led_o      : out std_logic);                         -- '1' = LED encendido
+end entity Comparador;
+-------------------------------------------------------------------------------------------------------------------
+architecture Arq of Comparador is
+begin
+
+  led_o <= '0' when unsigned(caracter_i) = to_unsigned(CARACTER, BITS) else '1'; --To unsigned convierte caracter en numero de bits
+
+end architecture Arq;
+-------------------------------------------------------------------------------------------------------------------

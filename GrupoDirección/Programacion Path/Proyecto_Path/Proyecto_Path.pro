@@ -1,5 +1,7 @@
 QT = core
 QT += core gui
+QT += serialport
+QT += core gui serialport
 CONFIG += c++17 cmdline
 
 # You can make your code fail to compile if it uses deprecated APIs.
@@ -8,16 +10,18 @@ CONFIG += c++17 cmdline
 
 SOURCES += \
         main.cpp \
+        motorcontroller.cpp \
         motornanotec.cpp \
         movimcarro.cpp \
         trajectory.cpp
 
-# Default rules for deployment
+# Default rules for deployment.
 qnx: target.path = /tmp/$${TARGET}/bin
 else: unix:!android: target.path = /opt/$${TARGET}/bin
 !isEmpty(target.path): INSTALLS += target
 
 HEADERS += \
+    motorcontroller.h \
     motornanotec.h \
     movimcarro.h \
     trajectory.h

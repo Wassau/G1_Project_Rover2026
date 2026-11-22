@@ -1,0 +1,44 @@
+library ieee;
+use ieee.std_logic_1164.all;
+use ieee.numeric_std.all;
+
+entity PWM_final is
+  generic (
+    periodo : integer := 2000   -- 20 ms con reloj de 100 kHz
+  );
+  port (
+    clk      : in  std_logic;
+    reinicio : in  std_logic;
+    posicion : in  std_logic_vector(7 downto 0);  -- 0 = 0 grados, 255 = 180 grados
+    salida   : out std_logic
+  );
+end PWM_final;
+
+architecture arq1 of PWM_final is
+  signal cnt   : integer range 0 to periodo - 1 := 0;
+  signal ancho : integer range 100 to 200;
+begin
+
+  -- Pulso entre 100 ciclos (1 ms) y 200 ciclos (2 ms)
+  ancho <= 100 + (to_integer(unsigned(posicion)) * 100) / 255;
+
+  process(clk)
+  begin
+    if rising_edge(clk) then
+      if reinicio = '1' then
+        cnt <= 0;
+      elsif cnt = periodo - 1 then
+        cnt <= 0;
+      else
+        cnt <= cnt + 1;
+      end if;
+
+      if cnt < ancho then
+        salida <= '1';
+      else
+        salida <= '0';
+      end if;
+    end if;
+  end process;
+
+end arq1;

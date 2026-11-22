@@ -1,0 +1,45 @@
+# Reading C:/altera/13.0sp1/modelsim_ase/tcl/vsim/pref.tcl 
+# do FPGA_ComunicacionRS-232_v1_run_msim_gate_vhdl.do 
+# if {[file exists gate_work]} {
+# 	vdel -lib gate_work -all
+# }
+# vlib gate_work
+# vmap work gate_work
+# Copying C:\altera\13.0sp1\modelsim_ase\win32aloem/../modelsim.ini to modelsim.ini
+# Modifying modelsim.ini
+# ** Warning: Copied C:\altera\13.0sp1\modelsim_ase\win32aloem/../modelsim.ini to modelsim.ini.
+#          Updated modelsim.ini.
+# 
+# vcom -93 -work work {FPGA_ComunicacionRS-232_v1_8_1200mv_85c_slow.vho}
+# Model Technology ModelSim ALTERA vcom 10.1d Compiler 2012.11 Nov  2 2012
+# -- Loading package STANDARD
+# -- Loading package TEXTIO
+# -- Loading package std_logic_1164
+# -- Loading package VITAL_Timing
+# -- Loading package VITAL_Primitives
+# -- Loading package cycloneive_atom_pack
+# -- Loading package cycloneive_components
+# -- Compiling entity Prueba_comunicacion
+# -- Compiling architecture structure of Prueba_comunicacion
+# 
+vsim work.prueba_comunicacion
+# vsim work.prueba_comunicacion 
+# Loading std.standard
+# Loading std.textio(body)
+# Loading ieee.std_logic_1164(body)
+# Loading ieee.vital_timing(body)
+# Loading ieee.vital_primitives(body)
+# Loading cycloneive.cycloneive_atom_pack(body)
+# Loading cycloneive.cycloneive_components
+# Loading work.prueba_comunicacion(structure)
+# Loading ieee.std_logic_arith(body)
+# Loading cycloneive.cycloneive_io_obuf(arch)
+# Loading cycloneive.cycloneive_io_ibuf(arch)
+wave create -driver freeze -pattern clock -initialvalue 0 -period 1us -dutycycle 50 -starttime 0us -endtime 1000us sim:/prueba_comunicacion/CLK
+wave create -driver freeze -pattern constant -value 1 -starttime 0us -endtime 1000us sim:/prueba_comunicacion/GO_S
+add wave -position insertpoint  \
+sim:/prueba_comunicacion/out_data
+wave create -driver freeze -pattern constant -value 1 -starttime 0us -endtime 1000us sim:/prueba_comunicacion/RESET
+wave edit change_value -start 0ps -end 1489209ps -value 0 Edit:/prueba_comunicacion/RESET
+wave edit change_value -start 1958034ps -end 3102519ps -value 0 Edit:/prueba_comunicacion/GO_S
+run -all
