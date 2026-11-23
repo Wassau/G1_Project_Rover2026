@@ -45,7 +45,6 @@ void MovimCarro::OnMovementRequired(QVector2D dir)
 {   
     // Calcular la cinemática inversa
     traj.CalculateMotorSpeedsAndSteering(dir);
-
     // Enviamos al hardware
     float vLeft = traj.GetReqSpeedLeft_mm_s();
     float vRight = -traj.GetReqSpeedRight_mm_s();

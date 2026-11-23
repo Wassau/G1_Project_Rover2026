@@ -12,7 +12,8 @@ MotorNanotec::MotorNanotec(QObject *parent)
     moduleAddress = 1;
     controller = nullptr;
 
-    online = false;
+    conectado = false;
+    comandoEnviado = 0;
 }
 
 void MotorNanotec::Initialize(float r, float gear, int address, MotorController *ctrl)
@@ -21,6 +22,8 @@ void MotorNanotec::Initialize(float r, float gear, int address, MotorController 
     reduccion = gear;
     moduleAddress = address;
     controller = ctrl;
+
+    QObject::connect(controller, SIGNAL(MessageReceived(QByteArray)), this, SLOT(OnReplyReceived(QByteArray)));
 }
 
 // Construye un mensaje de 9 bytes: [módulo][orden][tipo][motor][valor x4][suma]
@@ -51,15 +54,9 @@ void MotorNanotec::Stop()
     target_Rpm = 0.0;
     current_Speed = 0.0;
     last_Message = BuildMessage(3, 0, 0);        // 3 = MST (parar)
-    SendMessage(last_Message);
+    controller->SendMessage(last_Message);
 }
 
-bool MotorNanotec::SendMessage(const QByteArray &msg)
-{
-    if (controller == nullptr || !controller->IsOpen())
-        return false;
-    return controller->SendAndReceive(msg, last_Reply);
-}
 
 bool MotorNanotec::ProcessReply(const QByteArray &reply, qint32 &value)
 {
@@ -85,37 +82,54 @@ bool MotorNanotec::ProcessReply(const QByteArray &reply, qint32 &value)
 
 void MotorNanotec::RequestSpeedUpdate()
 {
-// Pregunta la velocidad real al módulo y actualiza current_Speed
-    last_Message = BuildMessage(6, 3, 0);              // 6 = GAP, tipo 3 = velocidad actual
-    qint32 rpm = 0;
 
-    if (SendMessage(last_Message) && ProcessReply(last_Reply, rpm)) {
-        // rpm del motor -> mm/s en la rueda (la cuenta de SetSpeed al revés)
-        current_Speed = rpm * 2.0f * M_PI * R_rueda / (60.0f * reduccion);
-        online = true;
-    } else {
-        online = false;                                // no contestó, o contestó mal
-    }
+    comandoEnviado = 6;
+    // Pregunta la velocidad real al módulo y actualiza current_Speed
+    last_Message = BuildMessage(6, 3, 0);              // 6 = GAP, tipo 3 = velocidad actual
+    controller->SendMessage(last_Message); // Solo envía, NO espera
 
     emit NewInfoAvailable(current_Speed);
 }
 
+
+void MotorNanotec::OnReplyReceived(QByteArray reply)
+{
+    // Si no es para mi dirección (el byte 0 es la dirección), lo ignoro
+    if (static_cast<quint8>(reply[0]) != moduleAddress) return;
+
+    qint32 valor = 0;
+    if (ProcessReply(reply, valor)) {
+        conectado = true;
+
+        // Si estábamos esperando una respuesta a un GAP (6)
+        if (comandoEnviado == 6) {
+            current_Speed = valor * 2.0 * M_PI * R_rueda / (60.0 * reduccion);
+        }
+    } else {
+        conectado = false;
+    }
+}
+
+
+
+
+
 void MotorNanotec::EnableDriver()
 {
     last_Message = BuildMessage(5, 255, 1);              // 5 = SAP, tipo 255 = "enable driver"
-    SendMessage(last_Message);
+    controller->SendMessage(last_Message);
 }
 
 void MotorNanotec::SetSpeed(float v_mm_s)
 {
     // mm/s en la rueda -> rpm del motor
     target_Rpm = v_mm_s / (2.0* M_PI * R_rueda) * 60.0 * reduccion;
-
+    comandoEnviado = 1;
     if (controller == nullptr || !controller->IsOpen())
         current_Speed = v_mm_s;      // sin motor: simulado. Con motor: lo pone RequestSpeedUpdate
 
     last_Message = BuildMessage(1, 0, qRound(target_Rpm));   // 1 = ROR (girar)
-    SendMessage(last_Message);
+    controller->SendMessage(last_Message);
 }
 
 float MotorNanotec::GetCurrentSpeed()
@@ -131,5 +145,5 @@ QByteArray MotorNanotec::GetLastMessage() {
     return last_Message; }
 QByteArray MotorNanotec::GetLastReply()   {
     return last_Reply; }
-bool MotorNanotec::IsOnline() {
-    return online; }
+bool MotorNanotec::EstaConectado() {
+    return conectado; }

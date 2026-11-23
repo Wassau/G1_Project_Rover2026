@@ -18,7 +18,8 @@ private:
     QByteArray last_Message;  // último mensaje construido
     QByteArray last_Reply;                               // última respuesta
     MotorController *controller;
-    bool online;
+    bool conectado;
+    quint8 comandoEnviado; // Para saber qué respuesta estamos esperando
 public:
     explicit MotorNanotec(QObject *parent = nullptr);
     void Initialize(float wheelRadius_mm, float gearRatio,  int address, MotorController *ctrl);
@@ -31,12 +32,14 @@ public:
     void Stop();
     QByteArray BuildMessage(quint8 command, quint8 type, qint32 value);
     void EnableDriver();
-    bool SendMessage(const QByteArray &msg);
     void RequestSpeedUpdate();
     bool ProcessReply(const QByteArray &reply, qint32 &value);
-    bool IsOnline();
+    bool EstaConectado();
 signals:
     void NewInfoAvailable(float speed_mm_s);
+
+private slots:
+    void OnReplyReceived(QByteArray reply);
 };
 
 #endif // MOTORNANOTEC_H

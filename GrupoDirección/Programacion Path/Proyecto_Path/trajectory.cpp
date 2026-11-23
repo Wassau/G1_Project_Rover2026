@@ -19,8 +19,6 @@ void Trajectory::CalculateMotorSpeedsAndSteering(QVector2D dir)
 {
 
     // dir = (Vx, Vy) en mm/s
-    //   Vy = componente hacia delante (+ avance, - marcha atrás)
-    //   Vx = componente lateral (+ derecha)
     float Vx = dir.x();
     float Vy = dir.y();
     // Velocidad lineal del carro = módulo del vector, con el signo de Vy
