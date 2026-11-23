@@ -94,8 +94,8 @@ void MotorNanotec::RequestSpeedUpdate()
 
 void MotorNanotec::OnReplyReceived(QByteArray reply)
 {
-    // Si no es para mi dirección (el byte 0 es la dirección), lo ignoro
-    if (static_cast<quint8>(reply[0]) != moduleAddress) return;
+    // Si no es para mi dirección (el byte 1 es la dirección), lo ignoro
+    if (static_cast<quint8>(reply[1]) != moduleAddress) return;
 
     qint32 valor = 0;
     if (ProcessReply(reply, valor)) {
