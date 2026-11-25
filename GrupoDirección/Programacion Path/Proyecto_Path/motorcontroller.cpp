@@ -14,11 +14,11 @@ bool MotorController::Init(const QString &portName, int baud)
     port.setParity(QSerialPort::NoParity);
     port.setStopBits(QSerialPort::OneStop);
     port.setFlowControl(QSerialPort::NoFlowControl);
-    if (!port.open(QIODevice::ReadWrite)) {
-        qDebug() << "Sin puerto/motor:" << port.errorString() << "-> modo simulación";
-        return false;
+    if (port.open(QIODevice::ReadWrite)) {
+        QObject::connect(&port, SIGNAL(readyRead()), this, SLOT(OnReadyRead()));
+        return true;
     }
-    return true;
+    return false;
 }
 
 bool MotorController::IsOpen()
@@ -27,18 +27,24 @@ bool MotorController::IsOpen()
 }
 
 // envía un mensaje y espera la respuesta de 9 bytes
-bool MotorController::SendAndReceive(const QByteArray &msg, QByteArray &reply)
+void MotorController::SendMessage(const QByteArray &msg)
 {
-    if (!port.isOpen())
-        return false;
+    if (port.isOpen()) {
+        port.write(msg);
+    }
+}
 
-    port.readAll();                          // tirar bytes viejos
-    port.write(msg);
-    port.waitForBytesWritten(100);
+// Este slot se ejecuta solo cuando hay datos nuevos en el cable
+void MotorController::OnReadyRead()
+{
+    AccumBytes.append(port.readAll());
 
-    reply.clear();
-    while (reply.size() < 9 && port.waitForReadyRead(100))
-        reply.append(port.readAll());
+    // Una trama TMCL de respuesta siempre tiene 9 bytes
+    while (AccumBytes.size() >= 9) {
+        QByteArray datos = AccumBytes.left(9);
+        AccumBytes.remove(0, 9);
 
-    return reply.size() == 9;
+        // Emitimos la señal para que el motor correspondiente la procese
+        emit MessageReceived(datos);
+    }
 }
